@@ -11,6 +11,9 @@ import {
 } from "./store.js";
 import { buildComposition } from "./composition.js";
 import { startRender, listRenders } from "./render.js";
+import { startAutoEdit, getAutoEdit } from "./autoedit.js";
+import { plannerBackend } from "./planner.js";
+import { asrAvailable } from "./transcript.js";
 
 export const apiRouter = express.Router();
 apiRouter.use(express.json());
@@ -53,7 +56,7 @@ apiRouter.delete("/projects/:id", (req, res) => {
 });
 
 // ---- Timeline elements --------------------------------------------------
-const ELEMENT_TYPES = new Set(["video", "image", "audio", "text"]);
+const ELEMENT_TYPES = new Set(["video", "image", "audio", "text", "decoration"]);
 
 apiRouter.post("/projects/:id/elements", (req, res) => {
   const project = getProject(req.params.id);
@@ -77,6 +80,7 @@ apiRouter.post("/projects/:id/elements", (req, res) => {
     color: body.color || "#ffffff",
     align: body.align || "center",
     fit: body.fit || "cover",
+    preset: body.preset || null,
   };
   project.elements.push(element);
   saveProject(project);
@@ -140,4 +144,28 @@ apiRouter.post("/projects/:id/render", (req, res) => {
 
 apiRouter.get("/projects/:id/renders", (req, res) => {
   res.json({ renders: listRenders(req.params.id) });
+});
+
+// ---- Autonomous highlight editing --------------------------------------
+// Report which AI capabilities are wired so the UI can set expectations.
+apiRouter.get("/autoedit/capabilities", (_req, res) => {
+  res.json({
+    planner: plannerBackend(), // "anthropic" or "heuristic"
+    asr: asrAvailable(), // speech-to-text available for captions?
+  });
+});
+
+apiRouter.post("/autoedit", (req, res) => {
+  try {
+    const job = startAutoEdit(req.body || {});
+    res.status(202).json({ job });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+apiRouter.get("/autoedit/:id", (req, res) => {
+  const job = getAutoEdit(req.params.id);
+  if (!job) return res.status(404).json({ error: "not found" });
+  res.json({ job });
 });

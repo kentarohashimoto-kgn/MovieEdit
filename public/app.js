@@ -108,11 +108,119 @@ async function loadAssets() {
       `<div class="name">${a.originalName}</div>
        <div class="meta">${fmtBytes(a.size)} · ${a.width && a.height ? `${a.width}×${a.height} · ` : ""}${fmtDur(a.duration)}</div>`,
     );
+    const actions = el("div", "row");
     const btn = el("button", "btn", "+ Timeline");
     btn.onclick = () => addVideoElement(a);
-    li.append(info, btn);
+    const ai = el("button", "btn", "🤖 Auto-edit");
+    ai.onclick = () => autoEdit(a);
+    actions.append(btn, ai);
+    li.append(info, actions);
     list.appendChild(li);
   }
+}
+
+// ---- Autonomous highlight editing ---------------------------------------
+async function loadCapabilities() {
+  try {
+    const c = await api("GET", "/api/autoedit/capabilities");
+    const cap = $("#aiCaps");
+    const planner = c.planner === "anthropic" ? "Claude" : "heuristic";
+    cap.textContent = `AI: highlight planner = ${planner} · auto-captions (ASR) = ${c.asr ? "on" : "off"}`;
+  } catch {
+    /* non-fatal */
+  }
+}
+
+async function autoEdit(asset) {
+  const instruction = prompt(
+    "編集指示（例: 5分のハイライトにして。テロップや装飾も文脈にあわせてつけて）",
+    "5分のハイライトにして。テロップや装飾も文脈にあわせてつけて。",
+  );
+  if (instruction === null) return;
+  const mins = prompt("目標の長さ（分）", "5");
+  if (mins === null) return;
+  const subs = document.querySelector(`#assetList`);
+  // Optional: let the user pick an uploaded subtitle (.srt/.vtt) asset id.
+  const subtitleAssetId = prompt(
+    "字幕アセットID（任意・SRT/VTTをアップロード済みなら。無ければ空でOK）",
+    "",
+  ) || null;
+
+  try {
+    const { job } = await api("POST", "/api/autoedit", {
+      assetId: asset.id,
+      instruction,
+      targetSeconds: Math.round(Number(mins) * 60) || 300,
+      subtitleAssetId,
+    });
+    toast("Auto-edit started");
+    pollAutoEdit(job.id);
+  } catch (e) {
+    toast(e.message, true);
+  }
+}
+
+const autoeditJobs = new Map(); // id -> latest job
+
+function autoeditRowHtml(j) {
+  const pct = j.progress || 0;
+  let extra = "";
+  if (j.projectId && j.status === "complete") {
+    extra = `<button class="link-btn" data-open="${j.projectId}" style="color:var(--accent)">open project ▸</button>`;
+  }
+  const warn = (j.warnings || []).length
+    ? `<div class="meta" style="color:var(--muted)">${j.warnings.join(" · ")}</div>`
+    : "";
+  return `
+    <div><span class="status ${j.status}">${j.status}</span> · ${j.message || ""}</div>
+    <div class="progressbar"><span style="width:${pct}%"></span></div>
+    <div class="meta">planner: ${j.plannerBackend || "?"} · transcript: ${j.transcriptSource || "?"} ${extra}${j.error ? `<span style="color:var(--err)">${j.error}</span>` : ""}</div>
+    ${warn}`;
+}
+
+function renderAutoedit() {
+  const list = $("#autoeditList");
+  list.innerHTML = "";
+  if (autoeditJobs.size === 0) {
+    list.appendChild(el("li", "empty", "No auto-edit jobs. Hit 🤖 Auto-edit on a clip."));
+    return;
+  }
+  for (const j of [...autoeditJobs.values()].reverse()) {
+    const li = el("li", "render");
+    li.id = `autoedit-${j.id}`;
+    li.innerHTML = autoeditRowHtml(j);
+    const open = li.querySelector("[data-open]");
+    if (open) {
+      open.onclick = async () => {
+        await loadProjects(open.getAttribute("data-open"));
+        toast("Opened generated project");
+      };
+    }
+    list.appendChild(li);
+  }
+}
+
+function pollAutoEdit(id) {
+  const tick = async () => {
+    try {
+      const { job } = await api("GET", `/api/autoedit/${id}`);
+      autoeditJobs.set(id, job);
+      renderAutoedit();
+      if (job.status === "complete") {
+        toast("Auto-edit complete — rendering the reel");
+        if (job.projectId) await loadProjects(job.projectId);
+        return;
+      }
+      if (job.status === "failed") {
+        toast(`Auto-edit failed: ${job.error}`, true);
+        return;
+      }
+      setTimeout(tick, 1500);
+    } catch {
+      /* stop polling on error */
+    }
+  };
+  tick();
 }
 
 async function uploadFile(file) {
@@ -399,8 +507,10 @@ dz.addEventListener("drop", (e) => {
 // Boot.
 (async function boot() {
   try {
+    await loadCapabilities();
     await loadAssets();
     await loadProjects();
+    renderAutoedit();
   } catch (e) {
     toast(e.message, true);
   }

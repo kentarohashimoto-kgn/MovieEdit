@@ -105,28 +105,93 @@ function renderElement(el, asset, src, animations) {
   }
 
   if (el.type === "text") {
-    const fontSize = num(el.fontSize, 72);
-    const color = esc(el.color || "#ffffff");
-    const align = esc(el.align || "center");
-    const justify =
-      align === "left" ? "flex-start" : align === "right" ? "flex-end" : "center";
-    // Fade the text in and out via GSAP (visual-only animation).
-    const fade = Math.min(0.6, duration / 4);
-    animations.push(
-      `tl.fromTo("#${domId} .txt", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: ${fade}, ease: "power2.out" }, ${start});`,
-    );
-    animations.push(
-      `tl.to("#${domId} .txt", { opacity: 0, duration: ${fade} }, ${start + duration - fade});`,
-    );
-    return (
-      `<div id="${domId}" class="clip" ${timing} ` +
-      `style="display:flex;align-items:center;justify-content:${justify};padding:0 8%;z-index:${10 + track}">` +
-      `<div class="txt" style="font-size:${fontSize}px;color:${color};font-weight:700;text-align:${align};` +
-      `text-shadow:0 4px 24px rgba(0,0,0,.45);opacity:0">${esc(el.text)}</div></div>`
-    );
+    return renderText(el, domId, timing, start, duration, track, animations);
+  }
+
+  if (el.type === "decoration") {
+    return renderDecoration(el, domId, timing, start, duration, track, animations);
   }
 
   return `<!-- unknown element type: ${esc(el.type)} -->`;
+}
+
+// Text overlays (telops) with named presets. Each returns positioned,
+// GSAP-animated HTML; the framework toggles the clip's visibility by timing.
+function renderText(el, domId, timing, start, duration, track, animations) {
+  const preset = el.preset || "caption";
+  const text = esc(el.text);
+  const fade = Math.min(0.5, duration / 4);
+  const z = 20 + track;
+
+  // Per-preset container layout + inner text styling.
+  const presets = {
+    title: {
+      wrap: `display:flex;align-items:center;justify-content:center;padding:0 8%`,
+      inner: `font-size:${num(el.fontSize, 96)}px;font-weight:800;color:${esc(el.color || "#fff")};text-align:center;text-shadow:0 6px 30px rgba(0,0,0,.5)`,
+      anim: "y",
+    },
+    caption: {
+      wrap: `display:flex;align-items:flex-end;justify-content:center;padding-bottom:7%`,
+      inner: `font-size:${num(el.fontSize, 52)}px;font-weight:700;color:#fff;background:rgba(0,0,0,.6);padding:.35em .7em;border-radius:10px;line-height:1.3;max-width:82%;text-align:center`,
+      anim: "yUp",
+    },
+    "lower-third": {
+      wrap: `display:flex;align-items:flex-end;justify-content:flex-start;padding:0 0 8% 6%`,
+      inner: `font-size:${num(el.fontSize, 44)}px;font-weight:700;color:#fff;background:linear-gradient(90deg,rgba(91,140,255,.95),rgba(124,91,255,.85));padding:.3em .8em;border-left:6px solid #fff`,
+      anim: "xLeft",
+    },
+    pill: {
+      wrap: `display:flex;align-items:flex-start;justify-content:center;padding-top:6%`,
+      inner: `font-size:${num(el.fontSize, 40)}px;font-weight:700;color:#111;background:#ffd34e;padding:.25em .9em;border-radius:999px`,
+      anim: "scale",
+    },
+  };
+  const p = presets[preset] || presets.caption;
+
+  const from =
+    p.anim === "scale"
+      ? "{ opacity: 0, scale: 0.8 }"
+      : p.anim === "xLeft"
+        ? "{ opacity: 0, x: -60 }"
+        : p.anim === "yUp"
+          ? "{ opacity: 0, y: 30 }"
+          : "{ opacity: 0, y: 40 }";
+  const to =
+    p.anim === "scale"
+      ? `{ opacity: 1, scale: 1, duration: ${fade}, ease: "back.out(1.7)" }`
+      : `{ opacity: 1, x: 0, y: 0, duration: ${fade}, ease: "power2.out" }`;
+  animations.push(`tl.fromTo("#${domId} .txt", ${from}, ${to}, ${start});`);
+  animations.push(`tl.to("#${domId} .txt", { opacity: 0, duration: ${fade} }, ${start + duration - fade});`);
+
+  return (
+    `<div id="${domId}" class="clip" ${timing} style="${p.wrap};z-index:${z}">` +
+    `<div class="txt" style="${p.inner};opacity:0">${text}</div></div>`
+  );
+}
+
+// Non-text decorations: accent bars, vignettes, progress bars, corner labels.
+function renderDecoration(el, domId, timing, start, duration, track, animations) {
+  const preset = el.preset || "accent-bar";
+  const z = 15 + track;
+  const fade = Math.min(0.4, duration / 4);
+
+  if (preset === "vignette") {
+    return `<div id="${domId}" class="clip" ${timing} style="z-index:${z};background:radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.5) 100%);pointer-events:none"></div>`;
+  }
+  if (preset === "accent-bar") {
+    animations.push(`tl.fromTo("#${domId} .bar", { scaleX: 0 }, { scaleX: 1, duration: ${fade}, ease: "power2.out" }, ${start});`);
+    return `<div id="${domId}" class="clip" ${timing} style="z-index:${z};display:flex;align-items:flex-end"><div class="bar" style="transform-origin:left;height:8px;width:100%;background:linear-gradient(90deg,#5b8cff,#7c5bff)"></div></div>`;
+  }
+  if (preset === "progress") {
+    animations.push(`tl.fromTo("#${domId} .bar", { scaleX: 0 }, { scaleX: 1, duration: ${duration}, ease: "none" }, ${start});`);
+    return `<div id="${domId}" class="clip" ${timing} style="z-index:${z};display:flex;align-items:flex-end"><div class="bar" style="transform-origin:left;height:6px;width:100%;background:#ffd34e"></div></div>`;
+  }
+  // corner-label
+  animations.push(`tl.fromTo("#${domId} .lbl", { opacity: 0, y: -10 }, { opacity: 1, y: 0, duration: ${fade} }, ${start});`);
+  return (
+    `<div id="${domId}" class="clip" ${timing} style="z-index:${z};display:flex;align-items:flex-start;justify-content:flex-end;padding:4% 4% 0 0">` +
+    `<div class="lbl" style="opacity:0;font-size:32px;font-weight:800;color:#fff;background:rgba(0,0,0,.45);padding:.15em .6em;border-radius:8px">${esc(el.text)}</div></div>`
+  );
 }
 
 export function compositionDuration(project) {
