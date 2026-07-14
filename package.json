@@ -1,0 +1,23 @@
+{
+  "name": "movieedit",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Edit large videos in the browser and render deterministic MP4s with HeyGen HyperFrames.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js"
+  },
+  "dependencies": {
+    "@hyperframes/producer": "^0.7.0",
+    "express": "^4.21.2",
+    "gsap": "^3.12.5"
+  },
+  "optionalDependencies": {
+    "ffmpeg-static": "^5.2.0",
+    "ffprobe-static": "^3.1.0"
+  }
+}

@@ -1,0 +1,15 @@
+node_modules/
+
+# Runtime data (uploads, generated compositions, renders, project metadata).
+# These can grow to many GB — never commit them.
+data/
+assets/
+compositions/
+output/
+
+# Local environment overrides
+.env
+
+# Logs / OS cruft
+*.log
+.DS_Store

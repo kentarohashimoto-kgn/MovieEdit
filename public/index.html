@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MovieEdit · HyperFrames</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">🎬 MovieEdit <span class="sub">powered by HeyGen HyperFrames</span></div>
+      <div class="project-picker">
+        <select id="projectSelect"></select>
+        <button id="newProjectBtn" class="btn">+ New project</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <!-- Left: media library + upload -->
+      <section class="panel">
+        <h2>Media library</h2>
+        <div id="dropzone" class="dropzone">
+          <p>Drag a video here, or</p>
+          <label class="btn">
+            Choose file<input id="fileInput" type="file" accept="video/*,audio/*,image/*" hidden />
+          </label>
+          <p class="hint">Large files are uploaded in chunks and resume automatically.</p>
+        </div>
+        <ul id="uploadList" class="upload-list"></ul>
+        <ul id="assetList" class="asset-list"></ul>
+      </section>
+
+      <!-- Center: timeline / elements -->
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Timeline</h2>
+          <div class="row">
+            <button id="addTextBtn" class="btn">+ Text</button>
+            <button id="previewBtn" class="btn">▶ Preview</button>
+            <button id="renderBtn" class="btn primary">⬇ Render MP4</button>
+          </div>
+        </div>
+        <p id="projectMeta" class="hint"></p>
+        <ul id="elementList" class="element-list"></ul>
+      </section>
+
+      <!-- Right: renders -->
+      <section class="panel">
+        <h2>Renders</h2>
+        <ul id="renderList" class="render-list"></ul>
+      </section>
+    </main>
+
+    <div id="toast" class="toast"></div>
+    <script src="/app.js"></script>
+  </body>
+</html>
