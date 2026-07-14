@@ -2,6 +2,8 @@
 
 ブラウザ上で動画をタイムラインに並べ、[HeyGen HyperFrames](https://github.com/heygen-com/hyperframes) で**決定論的な MP4** にレンダリングする動画編集アプリです。
 
+> 📖 画面の操作手順は **[MANUAL.md（操作マニュアル）](./MANUAL.md)** を参照してください（機能一覧・操作方法）。
+
 HyperFrames は「HTML を書く → 動画になる」フレームワーク。MovieEdit は、
 その HyperFrames を**エンジン**として使い、その手前に
 
