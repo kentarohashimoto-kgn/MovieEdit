@@ -7,16 +7,57 @@
 
 ---
 
-## 0. 起動と画面構成
+## 0. どこで動かすの？（大前提）
 
-### 起動
-```bash
-npm install
-# 既存のChromium / システムffmpegを使う場合（任意）
-export PUPPETEER_EXECUTABLE_PATH=/opt/pw-browsers/chromium
-npm start          # → http://localhost:4000
+- **この Claude の画面はコードを「作る」場所**です。ここでは動きません。
+- MovieEdit は **あなたのPC（Windows など）で動かすプログラム**です。操作は **Windows の「コマンドプロンプト」または「PowerShell」**（＝いわゆる DOS 画面）に文字コマンドを打って行います。
+- 全体像：**① PCに準備（1回だけ） → ② コマンドで起動 → ③ ブラウザで使う**
+
+---
+
+## 0.5 はじめて動かす（Windows・初心者向け）
+
+### 準備するもの（1回だけ）
+1. **Node.js（v22以上）をインストール** — [https://nodejs.org/](https://nodejs.org/) の「LTS」をダウンロードして、案内どおり「次へ」で進めるだけ。
+2. **コードをPCに置く** — 次のどちらか。
+   - 簡単な方法（Gitなし）：GitHub のリポジトリ画面で緑の **「Code」▼ → 「Download ZIP」** → 保存 → **展開（すべて展開）**。例：`C:\Users\あなた\Downloads\MovieEdit`
+   - Git がある方：`git clone <リポジトリURL>`
+
+### 起動する（毎回）
+1. **PowerShell を開く**：スタートメニューで「PowerShell」と検索して起動。
+   （または展開したフォルダを開き、上部アドレスバーに `powershell` と入力して Enter でもOK）
+2. **アプリのフォルダに移動**（`cd` の後ろは、あなたの実際のフォルダの場所）：
+   ```powershell
+   cd C:\Users\あなた\Downloads\MovieEdit
+   ```
+   ※ フォルダをエクスプローラで開き、**アドレスバーのパスをコピー**して貼り付けると確実です。
+3. **必要部品を取得**（初回のみ・数分かかります。Chromium と ffmpeg も自動で入ります）：
+   ```powershell
+   npm install
+   ```
+4. **起動**：
+   ```powershell
+   npm start
+   ```
+   `MovieEdit → http://localhost:4000` と表示されれば成功。**このウィンドウは開いたまま**にします（閉じると停止）。
+5. **ブラウザ**（Chrome/Edge）で **`http://localhost:4000`** を開く → 編集画面が出ます。
+
+### 止め方・次回
+- 止めるとき：PowerShell のウィンドウで **Ctrl + C**、またはウィンドウを閉じる。
+- 次回からは **手順 1→2→4→5**（`npm install` は初回だけでOK）。
+
+> うまくいかないときは、PowerShell に出た**赤い文字（エラー）をそのままコピーして教えてください**。原因を特定して直します。
+
+---
+
+## 1'. 起動（要点まとめ）
+
+```powershell
+npm install     # 初回だけ（Chromium・ffmpeg も自動取得）
+npm start       # → http://localhost:4000
 ```
 ブラウザで `http://localhost:4000` を開きます。
+（Mac / Linux の場合はターミナルで同じコマンド。既存の Chromium を使う等の詳細は README を参照）
 
 ### 画面構成（3カラム）
 ```
